@@ -60,6 +60,50 @@
       color:var(--text);
     }
 
+/* ====== Gate de acesso (Login por código) ====== */
+#authGate{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+}
+#authGate.show{ display:block; }
+#authGate .bg{
+  position:absolute; inset:0;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(10px);
+}
+#authGate .panel{
+  position: relative;
+  max-width: 520px;
+  margin: 10vh auto;
+  padding: 0 16px;
+}
+#authGate .box{
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 18px 55px rgba(15,23,42,.25);
+}
+#authGate .row2{
+  display:flex; gap:10px; align-items:center;
+}
+#authGate .msg{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:900;
+  color: rgba(15,23,42,.75);
+}
+#authGate .err{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:1000;
+  color: #b91c1c;
+  display:none;
+}
+
+
     .topbar{
       position:sticky; top:0; z-index:50;
       background: rgba(238,242,251,.78);
@@ -464,6 +508,37 @@
 </head>
 
 <body>
+
+<!-- Gate de acesso -->
+<div id="authGate" aria-hidden="true">
+  <div class="bg"></div>
+  <div class="panel">
+    <div class="box">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div class="brand" style="gap:10px;">
+          <img src="logo.png" class="logo-img" alt="Logo">
+          <div>
+            <div style="font-weight:1000;">Acesso ao Painel</div>
+            <div class="sub">Digite seu código para entrar</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <label>Código</label>
+      <div class="row2">
+        <input class="input" id="authCodeInput" placeholder="Ex.: ASR-1234" autocomplete="one-time-code" />
+        <button class="btn primary" id="authBtnEnter">Entrar</button>
+      </div>
+
+      <div class="err" id="authErr">Código inválido.</div>
+      <div class="msg">Dica: você pode sair depois em Config (se você habilitar o botão de sair).</div>
+    </div>
+  </div>
+</div>
+
+
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
@@ -857,6 +932,72 @@
    Storage + Helpers
 ========================= */
 const KEY = "evangelismo_v2_clean";
+
+/* =========================
+   Acesso por código (Gate)
+   - Controle básico (client-side)
+========================= */
+const AUTH = {
+  // onde guardar o "logado":
+  // sessionStorage = sai quando fecha o navegador/aba
+  // localStorage = fica salvo até você deslogar
+  storage: sessionStorage,
+
+  key: "evangelismo_access_code",
+
+  // Códigos permitidos (edite aqui)
+  // Recomendo criar códigos com prefixo e números
+  allowedCodes: [
+    "ASR-1234",
+    "ASR-5678",
+    "LIDER-0001"
+  ]
+};
+
+function normalizeCode(s){
+  return (s || "").trim().toUpperCase();
+}
+
+function isAuthorized(){
+  const saved = normalizeCode(AUTH.storage.getItem(AUTH.key));
+  return !!saved && AUTH.allowedCodes.includes(saved);
+}
+
+function showAuthGate(){
+  const gate = document.getElementById("authGate");
+  const input = document.getElementById("authCodeInput");
+  const err = document.getElementById("authErr");
+  const btn = document.getElementById("authBtnEnter");
+
+  gate.classList.add("show");
+  gate.setAttribute("aria-hidden","false");
+  err.style.display = "none";
+
+  const tryEnter = () => {
+    const code = normalizeCode(input.value);
+    if(AUTH.allowedCodes.includes(code)){
+      AUTH.storage.setItem(AUTH.key, code);
+      gate.classList.remove("show");
+      gate.setAttribute("aria-hidden","true");
+      err.style.display = "none";
+      boot(); // só inicia o app aqui
+    }else{
+      err.style.display = "block";
+    }
+  };
+
+  btn.onclick = tryEnter;
+  input.onkeydown = (e) => { if(e.key === "Enter") tryEnter(); };
+
+  setTimeout(()=> input.focus(), 50);
+}
+
+function logout(){
+  AUTH.storage.removeItem(AUTH.key);
+  // recarrega para voltar pro gate
+  location.reload();
+}
+
 const STAGES = ["Contato","Visitado","Estudo iniciado","Estudo em andamento","Decisão/Apelo","Preparação batismal","Batizado","Pós-batismo"];
 
 const todayISO = () => new Date().toISOString().slice(0,10);
@@ -2241,7 +2382,13 @@ function boot(){
 
   registerSW();
 }
-boot();
+
+if(isAuthorized()){
+  boot();
+}else{
+  showAuthGate();
+}
+
 </script>
 </body>
 </html>
