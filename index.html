@@ -416,10 +416,43 @@
 
     .navlabel{ font-size:11px; }
 
-    /* Modal */
-    #modal{ position:fixed; inset:0; display:none; z-index:80; }
-    #modalOverlay{ position:absolute; inset:0; background:rgba(15,23,42,.45); }
-    #modalWrap{ position:relative; max-width:780px; margin: 60px auto; padding: 0 16px; }
+/* Modal (mais robusto p/ mobile) */
+#modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 80;
+  overscroll-behavior: contain;
+}
+
+#modalOverlay{
+  position: absolute;
+  inset: 0;
+  background: rgba(15,23,42,.45);
+}
+
+#modalWrap{
+  position: relative;
+  max-width: 780px;
+  margin: 60px auto;
+  padding: 0 16px;
+
+  /* fallback + estabilidade */
+  height: calc(100vh - 120px);
+  max-height: calc(100vh - 120px);
+
+  display: flex;
+  flex-direction: column;
+}
+
+#modalBox{
+  /* scroll fica AQUI dentro */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(100vh - 120px);
+  touch-action: pan-y;
+}
+
 
     /* Print */
     @media print{
@@ -2108,8 +2141,14 @@ function drawLineChart(canvasId, values, labels){
 /* =========================
    Modal
 ========================= */
-function showModal(){ document.getElementById("modal").style.display="block"; }
-function closeModal(){ document.getElementById("modal").style.display="none"; }
+function showModal(){
+  document.getElementById("modal").style.display = "block";
+  document.body.style.overflow = "hidden"; // trava fundo
+}
+function closeModal(){
+  document.getElementById("modal").style.display = "none";
+  document.body.style.overflow = ""; // libera fundo
+}
 
 /* =========================
    Backup import/export
@@ -2165,6 +2204,19 @@ function registerSW(){
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   }
+}
+
+function enableHorizontalWheelScroll(){
+  const el = document.querySelector(".bottomnav-inner");
+  if(!el) return;
+
+  el.addEventListener("wheel", (e) => {
+    // se a rolagem vertical for maior, converte pra horizontal
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  }, { passive: false });
 }
 
 /* =========================
