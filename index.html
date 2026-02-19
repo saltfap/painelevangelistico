@@ -938,15 +938,8 @@ const KEY = "evangelismo_v2_clean";
    - Controle básico (client-side)
 ========================= */
 const AUTH = {
-  // onde guardar o "logado":
-  // sessionStorage = sai quando fecha o navegador/aba
-  // localStorage = fica salvo até você deslogar
   storage: sessionStorage,
-
   key: "evangelismo_access_code",
-
-  // Códigos permitidos (edite aqui)
-  // Recomendo criar códigos com prefixo e números
   allowedCodes: [
     "ADM",
     "252321",
@@ -960,12 +953,15 @@ function normalizeCode(s){
   return (s || "")
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, ""); // remove tudo que não for letra/número
+    .replace(/[^A-Z0-9]/g, "");
 }
+
+// cria um "set" já normalizado (não depende do jeito que você escreveu na lista)
+const ALLOWED = new Set(AUTH.allowedCodes.map(normalizeCode));
 
 function isAuthorized(){
   const saved = normalizeCode(AUTH.storage.getItem(AUTH.key));
-  return !!saved && AUTH.allowedCodes.includes(saved);
+  return !!saved && ALLOWED.has(saved);
 }
 
 function showAuthGate(){
@@ -980,12 +976,12 @@ function showAuthGate(){
 
   const tryEnter = () => {
     const code = normalizeCode(input.value);
-    if(AUTH.allowedCodes.includes(code)){
+    if(ALLOWED.has(code)){
       AUTH.storage.setItem(AUTH.key, code);
       gate.classList.remove("show");
       gate.setAttribute("aria-hidden","true");
       err.style.display = "none";
-      boot(); // só inicia o app aqui
+      boot();
     }else{
       err.style.display = "block";
     }
@@ -993,9 +989,9 @@ function showAuthGate(){
 
   btn.onclick = tryEnter;
   input.onkeydown = (e) => { if(e.key === "Enter") tryEnter(); };
-
   setTimeout(()=> input.focus(), 50);
 }
+
 
 function logout(){
   AUTH.storage.removeItem(AUTH.key);
@@ -2397,6 +2393,7 @@ if(isAuthorized()){
 </script>
 </body>
 </html>
+
 
 
 
