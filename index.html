@@ -957,7 +957,10 @@ const AUTH = {
 };
 
 function normalizeCode(s){
-  return (s || "").trim().toUpperCase();
+  return (s || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, ""); // remove tudo que não for letra/número
 }
 
 function isAuthorized(){
@@ -2394,6 +2397,7 @@ if(isAuthorized()){
 </script>
 </body>
 </html>
+
 
 
 
