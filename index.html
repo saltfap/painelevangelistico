@@ -2032,36 +2032,60 @@ function renderAgenda(){
   const d = dayInput.value;
 
   const items = DB.activities
-    .filter(a=>a.date===d)
-    .map(a=>{
-      let title = actTitle(a);
-      let time = a.time || "—";
-      if(a.type==="habito" && DB.config.habits!=="on") return null;
-      return { time, title, type: a.type };
-    })
-    .filter(Boolean)
-    .sort((a,b)=> (a.time||"").localeCompare(b.time||""));
+  .filter(a=>a.date===d)
+  .map(a=>{
+    let title = actTitle(a);
+    let time = a.time || "—";
+    if(a.type==="habito" && DB.config.habits!=="on") return null;
+
+    return {
+      id: a.id,
+      time,
+      title,
+      type: a.type,
+      deletable: true
+    };
+  })
+  .filter(Boolean)
+  .sort((a,b)=> (a.time||"").localeCompare(b.time||""));
 
   if(DB.config.habits==="on"){
-    items.push({ time:"—", title:"Hábito fixo: Devocional (check-in)", type:"habito" });
-    items.push({ time:"—", title:"Hábito fixo: Exercício físico (check-in)", type:"habito" });
-  }
+  items.push({
+    id: "",
+    time:"—",
+    title:"Hábito fixo: Devocional (check-in)",
+    type:"habito",
+    deletable: false
+  });
+
+  items.push({
+    id: "",
+    time:"—",
+    title:"Hábito fixo: Exercício físico (check-in)",
+    type:"habito",
+    deletable: false
+  });
+}
 
   const timeline = document.getElementById("agendaTimeline");
   if(!items.length){
     timeline.innerHTML = `<div class="note">Sem itens neste dia. Registre um evento/visita/estudo.</div>`;
   } else {
     timeline.innerHTML = items
-      .sort((a,b)=> (a.time||"").localeCompare(b.time||""))
-      .map(x=>`
-        <div class="item">
-          <div>
-            <strong>${escapeHtml(x.title)}</strong>
-            <div><small>${escapeHtml(x.time)}</small></div>
-          </div>
-          <span class="badge"><span class="dot"></span>${escapeHtml(x.type)}</span>
-        </div>
-      `).join("");
+  .sort((a,b)=> (a.time||"").localeCompare(b.time||""))
+  .map(x=>`
+    <div class="item">
+      <div>
+        <strong>${escapeHtml(x.title)}</strong>
+        <div><small>${escapeHtml(x.time)}</small></div>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <span class="badge"><span class="dot"></span>${escapeHtml(x.type)}</span>
+        ${x.deletable ? `<button class="btn danger" onclick="deleteAct('${x.id}')">Apagar</button>` : ""}
+      </div>
+    </div>
+  `).join("");
   }
 
   const next = DB.people
